@@ -732,10 +732,22 @@ class Administrator extends CI_Controller {
 			redirect(base_url().'administrator/home');
 		}
 
+		$row = $this->model_users->users_edit($id)->row_array();
+
 		if (isset($_POST['submit'])){
 			$this->form_validation->set_rules('c', 'Nama Lengkap', 'required');
 			if ($this->input->post('b') != '') {
-				$this->form_validation->set_rules('b', 'Password', 'required|min_length[6]');
+				$this->form_validation->set_rules('b', 'Password', array(
+					'required',
+					'min_length[12]',
+					array('password_check', function($str) {
+						if (!preg_match('/[A-Z]/', $str) || !preg_match('/[a-z]/', $str) || !preg_match('/[0-9]/', $str) || !preg_match('/[^A-Za-z0-9]/', $str)) {
+							$this->form_validation->set_message('password_check', 'The {field} must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
+							return FALSE;
+						}
+						return TRUE;
+					})
+				));
 				// Old password is required only if the user is changing THEIR OWN password
 				if ($this->session->username == $id) {
 					$this->form_validation->set_rules('old_password', 'Old Password', 'required');
@@ -744,7 +756,7 @@ class Administrator extends CI_Controller {
 
 			if ($this->form_validation->run() == FALSE) {
 				$data['mo'] = $this->model_modul->users_modul();
-				$data['rows'] = $this->model_users->users_edit($id)->row_array();
+				$data['rows'] = $row;
 				$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
 			} else {
 				if ($this->input->post('b') != '' && $this->session->username == $id) {
@@ -759,23 +771,46 @@ class Administrator extends CI_Controller {
 					} else {
 						$data['error'] = "Old password is incorrect.";
 						$data['mo'] = $this->model_modul->users_modul();
-						$data['rows'] = $this->model_users->users_edit($id)->row_array();
+						$data['rows'] = $row;
 						$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
 					}
 				} else {
-					$this->model_users->users_update($id);
-					if ($this->session->level == 'admin') {
-						redirect('administrator/manajemenuser');
+					// Check if admin is trying to change another admin's password via POST (security)
+					if ($this->session->level == 'admin' && $this->session->username != $id && $row['level'] == 'admin' && $this->input->post('b') != '') {
+						$data['error'] = "You cannot change another admin's password.";
+						$data['mo'] = $this->model_modul->users_modul();
+						$data['rows'] = $row;
+						$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
 					} else {
-						redirect('administrator/edit_manajemenuser/'.$id);
+						$this->model_users->users_update($id);
+						if ($this->session->level == 'admin') {
+							redirect('administrator/manajemenuser');
+						} else {
+							redirect('administrator/edit_manajemenuser/'.$id);
+						}
 					}
 				}
 			}
-		}else{
+		} elseif (isset($_POST['reset_password'])) {
+			// Password reset logic for admin editing user
+			if ($this->session->level == 'admin' && $row['level'] == 'user') {
+				$new_pass = $this->generate_random_password(16);
+				$this->model_users->users_update_password($id, md5($new_pass));
+				$this->session->set_flashdata('new_password', $new_pass);
+				redirect('administrator/edit_manajemenuser/'.$id);
+			} else {
+				redirect('administrator/edit_manajemenuser/'.$id);
+			}
+		} else {
 			$data['mo'] = $this->model_modul->users_modul();
-			$data['rows'] = $this->model_users->users_edit($id)->row_array();
+			$data['rows'] = $row;
 			$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
 		}
+	}
+
+	private function generate_random_password($length = 12) {
+		$chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-_=+';
+		return substr(str_shuffle($chars), 0, $length);
 	}
 
 	function delete_manajemenuser(){

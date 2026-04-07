@@ -24,6 +24,11 @@ class Model_users extends CI_model{
         return $this->db->query("SELECT * FROM users where username='$id'");
     }
 
+    function users_update_password($id, $password) {
+        $this->db->where('username', $id);
+        $this->db->update('users', array('password' => $password));
+    }
+
     function users_update($id){
         if (trim($this->input->post('b'))==''){
             $datadb = array('username'=>$this->db->escape_str($this->input->post('a')),
