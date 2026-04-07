@@ -68,7 +68,7 @@ ini_set('display_errors', 1);
 
 private function _panggil_groq($query, $konteks) {
     $client = new Client();
-    $apiKey = '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'; 
+    $apiKey = '<<INSERT YOUR API KEY HERE>>'; 
     $url = "https://api.groq.com/openai/v1/chat/completions";
 
     // Update Prompt agar lebih instruktif mengenai Link
