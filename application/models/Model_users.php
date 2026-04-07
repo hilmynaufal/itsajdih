@@ -24,29 +24,29 @@ class Model_users extends CI_model{
         return $this->db->query("SELECT * FROM users where username='$id'");
     }
 
-    function users_update(){
+    function users_update($id){
         if (trim($this->input->post('b'))==''){
             $datadb = array('username'=>$this->db->escape_str($this->input->post('a')),
                             'nama_lengkap'=>$this->db->escape_str($this->input->post('c')),
                             'email'=>$this->db->escape_str($this->input->post('d')),
                             'no_telp'=>$this->db->escape_str($this->input->post('e')),
-                            'level'=>$this->db->escape_str($this->input->post('f')),
-                            'blokir'=>$this->db->escape_str($this->input->post('h')),
                             'id_session'=>md5($this->input->post('a')));
-            $this->db->where('username',$this->input->post('id'));
-            $this->db->update('users',$datadb);
         }else{
             $datadb = array('username'=>$this->db->escape_str($this->input->post('a')),
                             'password'=>md5($this->input->post('b')),
                             'nama_lengkap'=>$this->db->escape_str($this->input->post('c')),
                             'email'=>$this->db->escape_str($this->input->post('d')),
                             'no_telp'=>$this->db->escape_str($this->input->post('e')),
-                            'level'=>$this->db->escape_str($this->input->post('f')),
-                            'blokir'=>$this->db->escape_str($this->input->post('h')),
                             'id_session'=>md5($this->input->post('a')));
-            $this->db->where('username',$this->input->post('id'));
-            $this->db->update('users',$datadb);
         }
+
+        if ($this->session->level == 'admin') {
+            $datadb['level'] = $this->db->escape_str($this->input->post('f'));
+            $datadb['blokir'] = $this->db->escape_str($this->input->post('h'));
+        }
+
+        $this->db->where('username',$id);
+        $this->db->update('users',$datadb);
     }
 
     function users_delete($id){
