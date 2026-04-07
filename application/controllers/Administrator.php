@@ -728,9 +728,49 @@ class Administrator extends CI_Controller {
 	function edit_manajemenuser(){
 		cek_session_admin();
 		$id = $this->uri->segment(3);
+		if ($this->session->level != 'admin' AND $this->session->username != $id){
+			redirect(base_url().'administrator/home');
+		}
+
 		if (isset($_POST['submit'])){
-			$this->model_users->users_update();
-			redirect('administrator/manajemenuser');
+			$this->form_validation->set_rules('c', 'Nama Lengkap', 'required');
+			if ($this->input->post('b') != '') {
+				$this->form_validation->set_rules('b', 'Password', 'required|min_length[6]');
+				// Old password is required only if the user is changing THEIR OWN password
+				if ($this->session->username == $id) {
+					$this->form_validation->set_rules('old_password', 'Old Password', 'required');
+				}
+			}
+
+			if ($this->form_validation->run() == FALSE) {
+				$data['mo'] = $this->model_modul->users_modul();
+				$data['rows'] = $this->model_users->users_edit($id)->row_array();
+				$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
+			} else {
+				if ($this->input->post('b') != '' && $this->session->username == $id) {
+					$cek = $this->model_users->cek_login($id, md5($this->input->post('old_password')));
+					if ($cek->num_rows() > 0) {
+						$this->model_users->users_update($id);
+						if ($this->session->level == 'admin') {
+							redirect('administrator/manajemenuser');
+						} else {
+							redirect('administrator/edit_manajemenuser/'.$id);
+						}
+					} else {
+						$data['error'] = "Old password is incorrect.";
+						$data['mo'] = $this->model_modul->users_modul();
+						$data['rows'] = $this->model_users->users_edit($id)->row_array();
+						$this->template->load('administrator/template','administrator/mod_users/view_users_edit',$data);
+					}
+				} else {
+					$this->model_users->users_update($id);
+					if ($this->session->level == 'admin') {
+						redirect('administrator/manajemenuser');
+					} else {
+						redirect('administrator/edit_manajemenuser/'.$id);
+					}
+				}
+			}
 		}else{
 			$data['mo'] = $this->model_modul->users_modul();
 			$data['rows'] = $this->model_users->users_edit($id)->row_array();
