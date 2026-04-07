@@ -1,0 +1,1 @@
+<strong>Copyright &copy; <?php echo date('Y'); ?> <a target='_BLANK' href="https://www.jdih.bandungkab.go.id"> JDIH</a>.</strong> All rights reserved.
