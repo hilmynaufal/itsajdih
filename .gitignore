@@ -2,3 +2,7 @@ asset
 wp-content
 jdihapp_backup.zip
 application/config/database.php
+db_migrate_api.php
+db_migrate.php
+# api_keys.sql
+Migrate_db.php

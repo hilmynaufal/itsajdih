@@ -11,30 +11,53 @@ class Tampil_hukum extends CI_Controller {
       	$this->load->model('model_utama');
         date_default_timezone_set('Asia/Jakarta');
         $this->load->database(); // pastikan database sudah di-load
-	
+        
+        $this->_cek_auth();
 	}
+
+    private function _cek_auth()
+    {
+        // 1. Ambil Header Authorization
+        $headers = $this->input->request_headers();
+        $auth_header = isset($headers['Authorization']) ? $headers['Authorization'] : (isset($headers['authorization']) ? $headers['authorization'] : null);
+        $api_key = isset($headers['X-API-KEY']) ? $headers['X-API-KEY'] : (isset($headers['x-api-key']) ? $headers['x-api-key'] : null);
+
+        // Jika menggunakan Bearer Token
+        if ($auth_header && preg_match('/Bearer\s(\S+)/', $auth_header, $matches)) {
+            $api_key = $matches[1];
+        }
+
+        if (empty($api_key)) {
+            $this->output
+                 ->set_content_type('application/json')
+                 ->set_status_header(401)
+                 ->set_output(json_encode([
+                     'status' => false,
+                     'message' => 'Akses Ditolak: API Key tidak ditemukan'
+                 ]))->_display();
+            exit;
+        }
+
+        // Cek ke database
+        $this->db->where('api_key', $api_key);
+        $this->db->where('is_active', 1);
+        $query = $this->db->get('api_keys');
+
+        if ($query->num_rows() === 0) {
+            $this->output
+                 ->set_content_type('application/json')
+                 ->set_status_header(401)
+                 ->set_output(json_encode([
+                     'status' => false,
+                     'message' => 'Akses Ditolak: API Key tidak valid atau tidak aktif'
+                 ]))->_display();
+            exit;
+        }
+    }
   
   public function halamanstatis()
 {
-    // 1. Pengaturan Kredensial
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Ambil data dari Header Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Validasi Basic Auth
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        echo json_encode([
-            "status" => false, 
-            "message" => "Akses Ditolak: Username atau Password salah"
-        ]);
-        exit; // Penting agar firewall tidak membaca proses selanjutnya
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Jika Auth Berhasil, Jalankan Query
     // Anda bisa menambahkan select() jika ingin membatasi kolom yang tampil
@@ -68,25 +91,7 @@ class Tampil_hukum extends CI_Controller {
 	
 	public function berita()
 {
-    // 1. Pengaturan Kredensial (Ganti sesuai keinginan Anda)
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Ambil data dari Header Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Validasi Basic Auth
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        echo json_encode([
-            "status" => false, 
-            "message" => "Akses Ditolak: Username atau Password salah"
-        ]);
-        exit; // Menghentikan eksekusi agar tidak bocor ke bawah
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Jika Auth Berhasil, Jalankan Query Data Berita
 	$this->db->select('id_berita, id_kategori, judul, judul_seo, headline, isi_berita, hari, tanggal, jam, gambar, dibaca, tag');
@@ -119,21 +124,7 @@ class Tampil_hukum extends CI_Controller {
 
 	
 	public function search() {
-    // --- START BASIC AUTH ---
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        echo json_encode(["status" => false, "message" => "Akses Ditolak"]);
-        exit;
-    }
-    // --- END BASIC AUTH ---
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // Ambil parameter
     $keyword = $this->input->get('keyword');
@@ -203,25 +194,7 @@ class Tampil_hukum extends CI_Controller {
     // =============================
    public function hukum_terbaru()
 {
-    // 1. Pengaturan Kredensial
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Ambil data dari Header Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Validasi Basic Auth
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        echo json_encode([
-            "status" => false, 
-            "message" => "Akses Ditolak: Username atau Password salah"
-        ]);
-        exit; // Menghentikan eksekusi agar tidak terjadi error lanjutan
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Pastikan model dimuat (Mencegah Error 500)
     $this->load->model('model_utama');
@@ -262,27 +235,7 @@ class Tampil_hukum extends CI_Controller {
     // =============================
    public function hukum_populer()
 {
-    // 1. Pengaturan Kredensial (Sesuaikan dengan kredensial API Anda)
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Mengambil data dari Header HTTP Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Verifikasi Keamanan
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        // Jika gagal, kirim header untuk memicu dialog login di browser/mobile
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        
-        echo json_encode([
-            "status" => false, 
-            "message" => "Akses Ditolak: Kredensial salah atau tidak ditemukan"
-        ]);
-        exit; // Menghentikan eksekusi agar tidak bocor ke logika bisnis
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Pastikan Model sudah ter-load (Mencegah Error 500)
     $this->load->model('model_utama');
@@ -365,23 +318,7 @@ class Tampil_hukum extends CI_Controller {
 	
 	public function rekapjdih()
 {
-    // 1. Tentukan Username & Password (bisa dipindah ke config atau database)
-
-	$valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Ambil data dari Header Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Validasi
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        // Jika gagal, kirim status 401 Unauthorized
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        echo json_encode(["status" => false, "message" => "Akses Ditolak: Username atau Password salah"]);
-        return;
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Jika Berhasil, Jalankan Query
     $query = $this->model_utama->rekap_hukum();
@@ -412,26 +349,7 @@ class Tampil_hukum extends CI_Controller {
 	
 		public function kategorihukum()
 {
-    // 1. Pengaturan Kredensial
-    $valid_username = 'admin';
-    $valid_password = 'password_rahasia543';
-
-    // 2. Ambil data dari Header Authorization
-    $user = isset($_SERVER['PHP_AUTH_USER']) ? $_SERVER['PHP_AUTH_USER'] : null;
-    $pass = isset($_SERVER['PHP_AUTH_PW']) ? $_SERVER['PHP_AUTH_PW'] : null;
-
-    // 3. Validasi Basic Auth
-    if ($user !== $valid_username || $pass !== $valid_password) {
-        header('WWW-Authenticate: Basic realm="API JDIH"');
-        header('HTTP/1.0 401 Unauthorized');
-        header('Content-Type: application/json');
-        
-        echo json_encode([
-            "status" => false, 
-            "message" => "Akses Ditolak: Username atau Password salah"
-        ]);
-        exit; // Menghentikan proses agar tidak mengeksekusi query database
-    }
+    // Validasi API Key sudah dilakukan di __construct() melalui _cek_auth()
 
     // 4. Jalankan Query Database
     $query = $this->db->query("SELECT
