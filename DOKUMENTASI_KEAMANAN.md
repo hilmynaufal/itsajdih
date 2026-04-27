@@ -162,6 +162,20 @@ Setelah halaman di-refresh atau ditinggalkan, password tidak akan pernah ditampi
 
 ---
 
+## TEMUAN 7 — HARDCODED BASIC AUTHENTICATION PADA API
+
+Sebelumnya, berbagai *endpoint* API (di `Tampil_hukum.php`) menggunakan otentikasi *Basic Auth* dengan kredensial (*username* dan *password*) yang ditulis langsung secara permanen (*hardcoded*) di dalam banyak fungsi. Hal ini memicu risiko kebocoran kredensial dan merepotkan ketika kredensial perlu diganti. Pengecekan keamanan yang berulang-ulang di setiap fungsi juga menyebabkan inefisiensi baris kode (melanggar prinsip DRY - *Don't Repeat Yourself*).
+
+Berikut perbaikan yang telah diterapkan:
+
+**1. Mengganti Basic Auth dengan API Key Terpusat — `Tampil_hukum.php`**
+Pengecekan keamanan dirombak menjadi skema *API Key* melalui HTTP Header `X-API-KEY` (atau *Bearer Token*). Seluruh kode validasi yang berulang telah dihapus dari fungsi-fungsi API. Pengecekan kini dipusatkan pada sebuah fungsi private baru `_cek_auth()` yang akan dipanggil satu kali pada metode `__construct()`. Pendekatan ini menjamin seluruh *route* / *endpoint* di dalam *controller* tersebut otomatis terlindungi.
+
+**2. Menyimpan Token di Database Secara Dinamis**
+Token atau *API Key* yang valid tidak lagi di-*hardcode*, melainkan disinkronkan dan divalidasi ke tabel khusus `api_keys` di database. Jika terjadi kebocoran token pada *mobile app*, admin dapat langsung me-nonaktifkan token lama (via field `is_active`) dan membuat token baru secara *on-the-fly* pada database tanpa harus menyentuh *source code* aplikasi web backend.
+
+---
+
 ## Ringkasan Perubahan File
 
 | File | Perubahan |
@@ -169,3 +183,5 @@ Setelah halaman di-refresh atau ditinggalkan, password tidak akan pernah ditampi
 | `application/controllers/Administrator.php` | Validasi kepemilikan profil (IDOR), pengecekan password lama, validasi password kuat, pencegahan ganti password admin lain, logika reset password |
 | `application/models/Model_users.php` | Pembatasan update `level`/`blokir` hanya untuk admin, penambahan fungsi `users_update_password()` |
 | `application/views/administrator/mod_users/view_users_edit.php` | Field password lama, tombol reset password, pesan flashdata, nonaktifkan field password antar-admin, sembunyikan kontrol level/blokir untuk user biasa |
+| `application/controllers/api/Tampil_hukum.php` | Mengganti *Basic Auth* *hardcoded* menjadi *API Key* terpusat melalui fungsi `_cek_auth()` pada konstruktor |
+| `api_keys.sql` | *Script* migrasi untuk membentuk tabel penyimpan *API Key* |
